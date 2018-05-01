@@ -1,9 +1,8 @@
-package caseStudy;
+package caseStudy.custom;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import caseStudy.Document;
+import caseStudy.custom.Document;
+import caseStudy.exception.DocumentException;
+import caseStudy.exception.ErrorResponse;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
@@ -15,55 +14,48 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import java.util.concurrent.TimeUnit;
+import java.util.Date;
+import java.util.HashMap;
 import javax.validation.Valid;
 
 @SpringBootApplication
 @Controller
 public class Main {
 
-	private LoadingCache<Integer,Document> cache;
-	
-	public Main()
+	private static HashMap<Integer, Document> cache;
+
+	public static void main(String[] args)
 	{
-		cache = CacheBuilder.newBuilder()
-		    .expireAfterWrite(30, TimeUnit.SECONDS)
-		    .build(new CacheLoader<Integer, Document>(){
-		
-		      @Override
-		      public Document load(Integer arg0) throws Exception {
-		          // TODO Auto-generated method stub
-		          return cache.getIfPresent(arg0);
-		      }
-		    }       
-		);
+		cache = new HashMap<>();
+		SpringApplication.run(Main.class, args);
 	}
-	
-	public static void main(String[] args) throws Exception{
-			SpringApplication.run(Main.class, args);
-	  }
 	
 	@RequestMapping(value = "/messages", method = RequestMethod.POST)
 	public ResponseEntity<String> storeDocument(@Valid @RequestBody Document documentRequest, Errors errors) throws DocumentException
 	{
 		if(errors.hasErrors())
-		{
 			throw new DocumentException(errors);
-		}
+		
+		documentRequest.setDate(new Date());
+		if(documentRequest.getTTL() == null)
+			documentRequest.setTTL(30000l);
 		cache.put(documentRequest.getId(), documentRequest);
-		return new ResponseEntity<>("Success",HttpStatus.OK);
+		return new ResponseEntity<>("Successfully added",HttpStatus.OK);
 	}
 	
 	@RequestMapping(value = "/messages/{id}", method = RequestMethod.GET)
-	public ResponseEntity<?> getDocument(@PathVariable Integer id) throws DocumentException
+	public ResponseEntity<Document> getDocument(@PathVariable Integer id) throws DocumentException
 	{
-		Document responseDocument = cache.getIfPresent(id);
+		Document responseDocument  = cache.get(id);
+		
 		if(responseDocument == null)
 			throw new DocumentException("Resource not found");
 		
-		return new ResponseEntity<>(responseDocument,HttpStatus.OK);
+		Date currentDate = new Date();
+		if((currentDate.getTime() - responseDocument.getDate().getTime()) > responseDocument.getTTL())
+			throw new DocumentException("Resource not found");
 		
+		return new ResponseEntity<>(responseDocument,HttpStatus.OK);
 	}
 	
 	@ExceptionHandler(Exception.class)
@@ -76,11 +68,5 @@ public class Main {
 			
 		error.setMessage(ex.getMessage());
 		return new ResponseEntity<ErrorResponse>(error, HttpStatus.OK);
-	}
-	
-	@RequestMapping(value = "/test", method = RequestMethod.POST )
-	public @ResponseBody String getMethod(@RequestBody Document documentRequest)
-	{
-		return documentRequest.toString();
 	}
 }

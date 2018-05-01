@@ -1,4 +1,4 @@
-package caseStudy;
+package caseStudy.exception;
 
 public class ErrorResponse {
 	private int errorCode;
