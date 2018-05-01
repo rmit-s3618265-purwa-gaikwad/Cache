@@ -53,7 +53,10 @@ public class Main {
 		
 		Date currentDate = new Date();
 		if((currentDate.getTime() - responseDocument.getDate().getTime()) > responseDocument.getTTL())
+		{
+			cache.remove(id);	
 			throw new DocumentException("Resource not found");
+		}
 		
 		return new ResponseEntity<>(responseDocument,HttpStatus.OK);
 	}
