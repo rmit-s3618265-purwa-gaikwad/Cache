@@ -1,16 +1,16 @@
 package caseStudy;
 
+import javax.validation.constraints.NotNull;
+
 public class Document {
-	@Override
-	public String toString() {
-		return "Document [id=" + id + ", message=" + message + "]";
-	}
-	private int id;
+	@NotNull
+	private Integer id;
+	@NotNull
 	private String message;
-	public int getId() {
+	public Integer getId() {
 		return id;
 	}
-	public void setId(int id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 	public String getMessage() {
@@ -18,5 +18,9 @@ public class Document {
 	}
 	public void setMessage(String message) {
 		this.message = message;
+	}
+	@Override
+	public String toString() {
+		return "Document [id=" + id + ", message=" + message + "]";
 	}
 }
